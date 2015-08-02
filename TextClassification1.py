@@ -1,6 +1,7 @@
 import nltk
 import random
 from nltk.corpus import movie_reviews
+import pickle
 
 documents = [(list(movie_reviews.words(fileid)), category)
              for category in movie_reviews.categories()
@@ -33,6 +34,15 @@ testing_set = featuresets[1900:] # everything after first 1900
 
 #posterior = (prior occurences x liklihood) / evidence
 classifier = nltk.NaiveBayesClassifier.train(training_set)
+classifier_f = open("naivebayes.pickle","rb")
+classifier = pickle.load(classifier_f)
+classifier_f.close()
+
+
 print("NB algo accuracy percent: ", (nltk.classify.accuracy(classifier, testing_set))*100)
 classifier.show_most_informative_features(15)
 
+
+save_classifier = open("naivebayes.pickle","wb") #wb = write as bytes
+pickle.dump(classifier, save_classifier)
+save_classifier.close()
