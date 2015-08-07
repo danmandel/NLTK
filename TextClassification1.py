@@ -9,6 +9,31 @@ from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.svm import SVC, LinearSVC, NuSVC
 
+from nltk.classify import ClassifierI # lets us inhereit from nltk classifier class
+from statistics import mode
+
+class VoteClassifier(ClassifierI): # inherits from ClassifierI
+    def __init__(self, *classifiers): # when you invoke the class the init method will run, others wont unless called
+        self.classifiers = classifiers
+        
+    def classify(self, features):
+        votes = []
+        for c in self._classifiers:
+            v = c.classify(features)
+            votes.append(v)
+        return mode(votes)
+    
+    def confidence(self, features):
+        votes = []
+        for c in self._classifiers:
+            v = c.classify(features)
+            votes.append(v)
+        choice_votes = votes.count(mode(votes)) # how many occurences of most popular vote
+        conf = choice_votes / len(votes) # % that was the chosen category
+        return conf
+        
+
+    
 
 documents = [(list(movie_reviews.words(fileid)), category)
              for category in movie_reviews.categories()
@@ -72,9 +97,9 @@ SGDClassifier_classifier = SklearnClassifier(SGDClassifier())
 SGDClassifier_classifier.train(training_set)
 print("SGDClassifier_classifier accuracy percent:", (nltk.classify.accuracy(SGDClassifier_classifier, testing_set))*100)
 
-SVC_classifier = SklearnClassifier(SVC())
-SVC_classifier.train(training_set)
-print("SVC_classifier accuracy percent:", (nltk.classify.accuracy(SVC_classifier, testing_set))*100)
+##SVC_classifier = SklearnClassifier(SVC())
+##SVC_classifier.train(training_set)
+##print("SVC_classifier accuracy percent:", (nltk.classify.accuracy(SVC_classifier, testing_set))*100)
 
 LinearSVC_classifier = SklearnClassifier(LinearSVC())
 LinearSVC_classifier.train(training_set)
@@ -83,4 +108,15 @@ print("LinearSVC_classifier accuracy percent:", (nltk.classify.accuracy(LinearSV
 NuSVC_classifier = SklearnClassifier(NuSVC())
 NuSVC_classifier.train(training_set)
 print("NuSVC_classifier accuracy percent:", (nltk.classify.accuracy(NuSVC_classifier, testing_set))*100)
+
+voted_classifier = VoteClassifier(classifier,
+                                  NuSVC_classifier,
+                                  LinearSVC_classifier,
+                                  SGDClassifier_classifier,
+                                  MNB_classifier,
+                                  BernoulliNB_classifier,
+                                  LogisticRegression_classifier)
+
+print("voted_classifier accuracy percent:", (nltk.classify.accuracy(voted_classifier, testing_set))*100)
+print("Classification: ", voted_classifier.classify(testing_set[0][0]), "Confidence %:", voted_classifier.confidence(testing_set[0][0]))
 
