@@ -14,15 +14,15 @@ from statistics import mode
 
 class VoteClassifier(ClassifierI): # inherits from ClassifierI
     def __init__(self, *classifiers): # when you invoke the class the init method will run, others wont unless called
-        self.classifiers = classifiers
-        
+        self._classifiers = classifiers
+
     def classify(self, features):
         votes = []
         for c in self._classifiers:
             v = c.classify(features)
             votes.append(v)
         return mode(votes)
-    
+
     def confidence(self, features):
         votes = []
         for c in self._classifiers:
@@ -32,8 +32,6 @@ class VoteClassifier(ClassifierI): # inherits from ClassifierI
         conf = choice_votes / len(votes) # % that was the chosen category
         return conf
         
-
-    
 
 documents = [(list(movie_reviews.words(fileid)), category)
              for category in movie_reviews.categories()
@@ -59,35 +57,30 @@ def find_features(document):
 
 #print((find_features(movie_reviews.words('neg/cv000_29416.txt'))))
 
-featuresets = [(find_features(rev),category) for (rev,category) in documents]
+featuresets = [(find_features(rev), category) for (rev, category) in documents]
+        
+training_set = featuresets[:1900]
+testing_set =  featuresets[1900:]
 
-training_set = featuresets[:1900] # first 1900
-testing_set = featuresets[1900:] # everything after first 1900
-
-#posterior = (prior occurences x liklihood) / evidence
 #classifier = nltk.NaiveBayesClassifier.train(training_set)
+
 classifier_f = open("naivebayes.pickle","rb")
 classifier = pickle.load(classifier_f)
 classifier_f.close()
 
 
-print("original NB algo accuracy percent: ", (nltk.classify.accuracy(classifier, testing_set))*100)
+
+
+print("Original Naive Bayes Algo accuracy percent:", (nltk.classify.accuracy(classifier, testing_set))*100)
 classifier.show_most_informative_features(15)
 
 MNB_classifier = SklearnClassifier(MultinomialNB())
 MNB_classifier.train(training_set)
-print("MNB_classifier accuracy percent: ", (nltk.classify.accuracy(MNB_classifier, testing_set))*100)
-
-##GaussianNB_classifier = SklearnClassifier(GaussianNB())
-##GaussianNB_classifier.train(training_set)
-##print("GaussianNB_classifier accuracy percent: ", (nltk.classify.accuracy(GaussianNB_classifier, testing_set))*100)
+print("MNB_classifier accuracy percent:", (nltk.classify.accuracy(MNB_classifier, testing_set))*100)
 
 BernoulliNB_classifier = SklearnClassifier(BernoulliNB())
 BernoulliNB_classifier.train(training_set)
-print("BernoulliNB_classifier accuracy percent: ", (nltk.classify.accuracy(BernoulliNB_classifier, testing_set))*100)
-
-##LogisticRegression, SGDClassifier
-##SVC, LinearSVC, NuSVC
+print("BernoulliNB_classifier accuracy percent:", (nltk.classify.accuracy(BernoulliNB_classifier, testing_set))*100)
 
 LogisticRegression_classifier = SklearnClassifier(LogisticRegression())
 LogisticRegression_classifier.train(training_set)
@@ -109,6 +102,7 @@ NuSVC_classifier = SklearnClassifier(NuSVC())
 NuSVC_classifier.train(training_set)
 print("NuSVC_classifier accuracy percent:", (nltk.classify.accuracy(NuSVC_classifier, testing_set))*100)
 
+
 voted_classifier = VoteClassifier(classifier,
                                   NuSVC_classifier,
                                   LinearSVC_classifier,
@@ -118,5 +112,14 @@ voted_classifier = VoteClassifier(classifier,
                                   LogisticRegression_classifier)
 
 print("voted_classifier accuracy percent:", (nltk.classify.accuracy(voted_classifier, testing_set))*100)
-print("Classification: ", voted_classifier.classify(testing_set[0][0]), "Confidence %:", voted_classifier.confidence(testing_set[0][0]))
 
+print("Classification:", voted_classifier.classify(testing_set[0][0]), "Confidence %:",voted_classifier.confidence(testing_set[0][0])*100)
+print("Classification:", voted_classifier.classify(testing_set[1][0]), "Confidence %:",voted_classifier.confidence(testing_set[1][0])*100)
+print("Classification:", voted_classifier.classify(testing_set[2][0]), "Confidence %:",voted_classifier.confidence(testing_set[2][0])*100)
+print("Classification:", voted_classifier.classify(testing_set[3][0]), "Confidence %:",voted_classifier.confidence(testing_set[3][0])*100)
+print("Classification:", voted_classifier.classify(testing_set[4][0]), "Confidence %:",voted_classifier.confidence(testing_set[4][0])*100)
+print("Classification:", voted_classifier.classify(testing_set[5][0]), "Confidence %:",voted_classifier.confidence(testing_set[5][0])*100)
+
+#testing_set = list of features and whether or not they contain top 3000 words. trained against whether top 3000 words are more ocmmonly found in egative or positive reviews
+
+#get data source and pass it through find_features()
